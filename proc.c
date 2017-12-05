@@ -6,6 +6,7 @@
 #include "x86.h"
 #include "proc.h"
 #include "spinlock.h"
+#include "pstat.h"
 
 struct {
   struct spinlock lock;
@@ -70,12 +71,13 @@ myproc(void) {
 // If found, change state to EMBRYO and initialize
 // state required to run in the kernel.
 // Otherwise return 0.
+
+struct pstat pstat;
 static struct proc*
 allocproc(void)
 {
   struct proc *p;
   char *sp;
-
   acquire(&ptable.lock);
 
   for(p = ptable.proc; p < &ptable.proc[NPROC]; p++)
@@ -88,7 +90,15 @@ allocproc(void)
 found:
   p->state = EMBRYO;
   p->pid = nextpid++;
-
+  p->priority=10;
+  //getAllPids
+  pstat.inuse[p-ptable.proc] = 1;
+  pstat.pid[p-ptable.proc] = p->pid;
+  pstat.name[p-ptable.proc][0]=p->name[0];
+	pstat.name[p-ptable.proc][1]=p->name[1];
+		pstat.name[p-ptable.proc][2]=p->name[2];
+  pstat.hticks[p-ptable.proc]=0;
+  pstat.lticks[p-ptable.proc]=0;
   release(&ptable.lock);
 
   // Allocate kernel stack.
@@ -531,4 +541,41 @@ procdump(void)
     }
     cprintf("\n");
   }
+}
+//cps syscall
+int
+cps()
+{
+  struct proc *p;
+  //enable interupts this processor.
+  sti();
+  acquire(&ptable.lock);
+  cprintf("name \t pid \t state \t \t priority \n");
+  for(p=ptable.proc ; p<&ptable.proc[NPROC] ; p++)
+	if(p->state==SLEEPING)
+		cprintf("%s \t %d \t SLEEPING \t %d\n ",p->name,p->pid,p->priority);
+	else if(p->state==RUNNING)
+		cprintf("%s \t %d \t RUNNING \t %d\n ",p->name,p->pid,p->priority);
+	else if(p->state==RUNNABLE)
+		cprintf("%s \t %d \t RUNNABLE \t %d\n ",p->name,p->pid,p->priority);
+
+	release(&ptable.lock);
+	return 22;
+}
+
+//change priority
+int
+chpr(int pid , int priority)
+{
+	struct proc *p;
+	acquire(&ptable.lock);
+	for(p = ptable.proc;p<&ptable.proc[NPROC];p++){
+		if(p->pid==pid){
+			p->priority=priority;
+			break;
+		}
+	}
+	release(&ptable.lock);
+
+	return pid;
 }
