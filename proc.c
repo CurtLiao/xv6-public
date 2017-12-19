@@ -122,7 +122,7 @@ found:
   p->context = (struct context*)sp;
   memset(p->context, 0, sizeof *p->context);
   p->context->eip = (uint)forkret;
-
+  
   return p;
 }
 
@@ -342,7 +342,7 @@ scheduler(void)
     // Enable interrupts on this processor.
     sti();
     
-    struct proc *highP=NULL;//new
+    struct proc *highP=0;//new
     // Loop over process table looking for process to run.
     acquire(&ptable.lock);
     for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
@@ -352,10 +352,15 @@ scheduler(void)
       highP=p;//new
       //choose one with highest priority(new)
       for(p1 = ptable.proc; p1 < &ptable.proc[NPROC]; p1++){
-      	if(p1->state != RUNNABLE)
+      	if(p1->state != RUNNABLE){
         	continue;
-	if(highP ->priority > p1 ->priority)
-		highP=p1;
+        }
+	if(highP ->priority > p1 ->priority){
+		if(highP->priority>0 && p1->priority <=20){
+			highP->priority-=1;
+			p1->priority+=1;
+		}
+        }
       }
       p = highP;
       // Switch to chosen process.  It is the process's job
