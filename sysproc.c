@@ -153,3 +153,9 @@ if(argptr(0,(void *)&r, sizeof(*r)) <0)
 cmostime(r);
 return 0;
 }
+
+int
+sys_getprocs(void)
+{
+  return getprocs();
+}

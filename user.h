@@ -31,6 +31,7 @@ int chpr(int pid , int priority);
 int getppid(void);
 int getAllPids(struct pstat*);
 int shutdown(void);
+int getprocs(void);
 
 // ulib.c
 int stat(char*, struct stat*);

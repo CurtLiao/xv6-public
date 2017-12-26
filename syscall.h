@@ -26,4 +26,4 @@
 #define SYS_getAllPids  25
 #define SYS_shutdown  26
 #define SYS_getppid  27
-
+#define SYS_getprocs 28
