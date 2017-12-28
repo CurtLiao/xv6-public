@@ -32,7 +32,7 @@ struct context {
   uint eip;
 };
 
-enum procstate { UNUSED, EMBRYO, SLEEPING, RUNNABLE, RUNNING, ZOMBIE };
+enum procstate { UNUSED, EMBRYO, SLEEPING, RUNNABLE, RUNNING , ZOMBIE };
 
 // Per-process state
 struct proc {
@@ -48,6 +48,7 @@ struct proc {
   int killed;                  // If non-zero, have been killed
   struct file *ofile[NOFILE];  // Open files
   struct inode *cwd;           // Current directory
+  uint ctime;
   char name[16];               // Process name (debugging)
   int priority;		   //Process priority (0-20);lower value,higher prioriy;
 };

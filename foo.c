@@ -7,7 +7,7 @@ int
 main(int argc , char *argv[])
 {
   int k, n, id;
-  double x = 0 , z , d;
+  double x = 0 , z ,d;
   
   if(argc<2)
 	n=1; //default value
@@ -18,7 +18,6 @@ main(int argc , char *argv[])
   if(argc<3)
 	d=0.1;
   else d=atoi(argv[2]);
-
   x=0;
   id=0;
   for(k = 0 ; k < n ; k++){
@@ -31,8 +30,10 @@ main(int argc , char *argv[])
 	   wait();
 	}else{//child
 	   printf(1,"Child %d created\n",getpid());
-	   for(z = 0; z<8000000.0;z+=d)
+	   for(z = 0; z<80000000.0;z+=d){
 		x = x + 3.14 * 89.64; //useless calc to consume CPU time;
+	   }
+	   //printf(1,"x = %d\n", x);
 	   break;
 	}
    }

@@ -91,6 +91,7 @@ allocproc(void)
 found:
   p->state = EMBRYO;
   p->pid = nextpid++;
+  p->ctime = ticks;
   p->priority=10;
   //getAllPids
   pstat.inuse[p-ptable.proc] = 1;
@@ -141,6 +142,7 @@ userinit(void)
     panic("userinit: out of memory?");
   inituvm(p->pgdir, _binary_initcode_start, (int)_binary_initcode_size);
   p->sz = PGSIZE;
+  p->ctime = ticks;
   memset(p->tf, 0, sizeof(*p->tf));
   p->tf->cs = (SEG_UCODE << 3) | DPL_USER;
   p->tf->ds = (SEG_UDATA << 3) | DPL_USER;
@@ -334,51 +336,84 @@ void
 scheduler(void)
 {
   struct proc *p;
-  struct proc *p1;
   struct cpu *c = mycpu();
-  c->proc = 0;
-  
   for(;;){
-    // Enable interrupts on this processor.
     sti();
-    
-    struct proc *highP=0;//new
+    // Enable interrupts on this processor.
+    struct proc *highP=0;
     // Loop over process table looking for process to run.
     acquire(&ptable.lock);
+    
+    struct proc *p1;
+    
     for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
       if(p->state != RUNNABLE)
         continue;
-
-      highP=p;//new
-      //choose one with highest priority(new)
-      for(p1 = ptable.proc; p1 < &ptable.proc[NPROC]; p1++){
-      	if(p1->state != RUNNABLE){
-        	continue;
-        }
-	if(highP ->priority > p1 ->priority){
-		if(highP->priority>0 && p1->priority <=20){
-			highP->priority-=1;
-			p1->priority+=1;
+      highP=p;
+    	for(p1 = ptable.proc; p1 < &ptable.proc[NPROC]; p1++){
+    		if(p1->state != RUNNABLE)
+			continue;
+		if(highP->priority > p1 -> priority){
+			highP = p1;
 		}
+   	 }
+    p = highP;
+    //choose one with highest priority(new)
+      
+    // Switch to chosen process.  It is the process's job
+    // to release ptable.lock and then reacquire it
+    // before jumping back to us.
+    c->proc = p;
+    switchuvm(p);
+    p->state = RUNNING;
+    procdump();
+    cprintf("pid of now process = %d , pstate = %d\n",p->pid,p->state);
+
+    swtch(&(c->scheduler), p->context);
+    switchkvm();
+	
+    // Process is done running for now.
+    // It should have changed its p->state before coming back.
+	   for(p1 = ptable.proc; p1 < &ptable.proc[NPROC]; p1++){
+		if(p1->state ==RUNNABLE){
+		   if(p1->priority > 1){
+			p1->priority-=1;
+		   }
+		}
+		else{
+		   if(p1->priority <= 19) {
+			p1->priority+=1;   
+		   }
+		}  
+	   }
+     c->proc = 0;
+     
+   }
+   //FCFS SCHEDULER 
+   /*struct proc *minP = NULL;
+        for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
+          if(p->state == RUNNABLE){
+            if (minP!=NULL){
+              if(p->ctime < minP->ctime)
+                minP = p;
+            }
+            else
+              minP = p;
+          }
         }
-      }
-      p = highP;
-      // Switch to chosen process.  It is the process's job
-      // to release ptable.lock and then reacquire it
-      // before jumping back to us.
-      c->proc = p;
-      switchuvm(p);
-      p->state = RUNNING;
-
-      swtch(&(c->scheduler), p->context);
-      switchkvm();
-
-      // Process is done running for now.
-      // It should have changed its p->state before coming back.
-      c->proc = 0;
-    }
+        if (minP!=NULL){
+          p = minP;//the process with the smallest creation time
+          c->proc = p;
+          switchuvm(p);
+          p->state = RUNNING;
+	  procdump();
+          swtch(&mycpu()->scheduler, c->proc->context);
+          switchkvm();
+          // Process is done running for now.
+          // It should have changed its p->state before coming back.
+           c->proc = 0;
+       }*/
     release(&ptable.lock);
-
   }
 }
 
@@ -538,11 +573,12 @@ procdump(void)
   [RUNNING]   "run   ",
   [ZOMBIE]    "zombie"
   };
-  int i;
+  //int i;
   struct proc *p;
   char *state;
   uint pc[10];
-
+ cprintf("---------------------------------------\n");
+ cprintf("PID  STATE     NAME    PRIORITY\n");
   for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
     if(p->state == UNUSED)
       continue;
@@ -550,11 +586,11 @@ procdump(void)
       state = states[p->state];
     else
       state = "???";
-    cprintf("%d %s %s", p->pid, state, p->name);
+    cprintf("%d    %s    %s    %d", p->pid, state, p->name,p->priority);
     if(p->state == SLEEPING){
       getcallerpcs((uint*)p->context->ebp+2, pc);
-      for(i=0; i<10 && pc[i] != 0; i++)
-        cprintf(" %p", pc[i]);
+      /*for(i=0; i<10 && pc[i] != 0; i++)
+        cprintf(" %p", pc[i]);*/
     }
     cprintf("\n");
   }
