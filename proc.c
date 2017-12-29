@@ -345,8 +345,7 @@ scheduler(void)
     // Loop over process table looking for process to run.
     acquire(&ptable.lock);
     
-
-
+    //PRIORITY SCHEDULER
     for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
       if(p->state != RUNNABLE)
         continue;
@@ -390,29 +389,29 @@ scheduler(void)
      c->proc = 0;
      
    }
+
    //FCFS SCHEDULER 
-   /*struct proc *minP = NULL;
+   /*struct proc *sP = NULL;
         for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
           if(p->state == RUNNABLE){
-            if (minP!=NULL){
-              if(p->ctime < minP->ctime)
-                minP = p;
+            if (sP!=NULL){
+              if(p->ctime < sP->ctime)
+                sP = p;
             }
             else
               minP = p;
           }
         }
-        if (minP!=NULL){
-          p = minP;//the process with the smallest creation time
+        if (sP!=NULL){
+          p = sP;
           c->proc = p;
           switchuvm(p);
           p->state = RUNNING;
 	  procdump();
           swtch(&mycpu()->scheduler, c->proc->context);
           switchkvm();
-          // Process is done running for now.
-          // It should have changed its p->state before coming back.
-           c->proc = 0;
+        
+          c->proc = 0;
        }*/
     release(&ptable.lock);
   }

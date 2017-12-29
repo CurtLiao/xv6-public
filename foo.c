@@ -7,7 +7,7 @@ int
 main(int argc , char *argv[])
 {
   int k, n, id;
-  double x = 0 , z ,d;
+  double x = 0 , z , d;
   
   if(argc<2)
 	n=1; //default value
